@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive RAG Model Explainer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Warm Neutrals -->
+    <!-- Application Structure Plan: The application is designed as a top-down, linear narrative that guides the user through the five core stages of the RAG pipeline presented in the Python script. The structure starts with a high-level interactive flowchart. Clicking any stage in the flowchart smoothly scrolls the user to a dedicated section below, which provides a detailed explanation, interactive demonstrations, and relevant code snippets. This sequential, drill-down approach was chosen because the RAG process is inherently a step-by-step pipeline. It allows a user to first grasp the overall architecture and then explore the specifics of each stage at their own pace, making a complex topic highly digestible. The interactions (chunking demo, retrieval visualization) are embedded within their relevant stages to provide immediate, hands-on context. -->
+    <!-- Visualization & Content Choices:
+        1. RAG Process Flow: Report Info -> The entire RAG pipeline. Goal -> Organize/Inform. Viz/Method -> An interactive flowchart built with HTML/CSS. Interaction -> Clicking a stage scrolls to the detailed section. Justification -> Provides a high-level map of the process, acting as the main navigation. Method -> HTML/CSS with JS for scrolling.
+        2. Text Chunking: Report Info -> CharacterTextSplitter logic. Goal -> Inform. Viz/Method -> Interactive text area. Interaction -> User clicks a button to see text split into chunks. Justification -> Makes the abstract concept of chunking tangible. Method -> JS DOM manipulation.
+        3. Vector Retrieval: Report Info -> Chroma's similarity search. Goal -> Compare/Relationships. Viz/Method -> Scatter Plot. Interaction -> A 'Query' button adds a new point and highlights the 'k' nearest neighbors. Justification -> Visually demystifies how a vector store finds relevant information. Library -> Chart.js (Canvas).
+        4. Prompt Augmentation: Report Info -> PromptTemplate logic. Goal -> Inform. Viz/Method -> Interactive text assembly. Interaction -> User clicks a button to see context and query combined into the final prompt. Justification -> Clearly shows how the 'Augmented' part of RAG works. Method -> JS DOM manipulation.
+        5. Code & Libraries: Report Info -> The entire Python script and its imports. Goal -> Organize/Inform. Viz/Method -> Tabbed content viewer and definition lists. Interaction -> Clicking tabs to switch content. Justification -> Organizes reference material neatly without cluttering the main flow. Method -> JS DOM manipulation. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .chart-container {
+            position: relative;
+            margin: auto;
+            height: 400px;
+            max-height: 50vh;
+            width: 100%;
+            max-width: 700px;
+        }
+        .flow-arrow {
+            color: #d1d5db; /* gray-300 */
+        }
+        .flow-box {
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .flow-box:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+            border-color: #fb923c; /* orange-400 */
+        }
+        .active-tab {
+            border-bottom-color: #fb923c; /* orange-400 */
+            color: #fb923c;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body class="bg-stone-50 text-stone-800">
+
+    <div class="container mx-auto p-4 sm:p-6 lg:p-8 max-w-7xl">
+
+        <header class="text-center mb-12">
+            <h1 class="text-4xl md:text-5xl font-bold text-stone-900">Understanding a RAG-Powered PDF Reader</h1>
+            <p class="mt-4 text-lg text-stone-600 max-w-3xl mx-auto">An interactive breakdown of the Python code that uses Retrieval-Augmented Generation (RAG) to let you chat with your documents.</p>
+        </header>
+
+        <section id="interactive-flowchart" class="mb-16">
+            <h2 class="text-3xl font-bold text-center mb-8">The RAG Process Flow</h2>
+            <div class="flex flex-col md:flex-row items-center justify-center space-y-4 md:space-y-0 md:space-x-4 text-center">
+
+                <div data-target="section-1" class="flow-box bg-white p-4 rounded-lg border-2 border-stone-200 w-full md:w-48">
+                    <div class="text-3xl mb-2">📥</div>
+                    <h3 class="font-semibold">1. Input & UI</h3>
+                    <p class="text-sm text-stone-500">Upload Docs & Ask</p>
+                </div>
+
+                <div class="flow-arrow text-4xl transform md:-rotate-90">↓</div>
+
+                <div data-target="section-2" class="flow-box bg-white p-4 rounded-lg border-2 border-stone-200 w-full md:w-48">
+                    <div class="text-3xl mb-2">✂️</div>
+                    <h3 class="font-semibold">2. Processing</h3>
+                    <p class="text-sm text-stone-500">Parse & Chunk Text</p>
+                </div>
+
+                <div class="flow-arrow text-4xl transform md:-rotate-90">↓</div>
+
+                <div data-target="section-3" class="flow-box bg-white p-4 rounded-lg border-2 border-stone-200 w-full md:w-48">
+                    <div class="text-3xl mb-2">🔢</div>
+                    <h3 class="font-semibold">3. Embedding</h3>
+                    <p class="text-sm text-stone-500">Create Vector Store</p>
+                </div>
+
+                <div class="flow-arrow text-4xl transform md:-rotate-90">↓</div>
+
+                <div data-target="section-4" class="flow-box bg-white p-4 rounded-lg border-2 border-stone-200 w-full md:w-48">
+                    <div class="text-3xl mb-2">🔍</div>
+                    <h3 class="font-semibold">4. Retrieval</h3>
+                    <p class="text-sm text-stone-500">Find Relevant Chunks</p>
+                </div>
+
+                <div class="flow-arrow text-4xl transform md:-rotate-90">↓</div>
+
+                <div data-target="section-5" class="flow-box bg-white p-4 rounded-lg border-2 border-stone-200 w-full md:w-48">
+                    <div class="text-3xl mb-2">✍️</div>
+                    <h3 class="font-semibold">5. Generation</h3>
+                    <p class="text-sm text-stone-500">Augment & Answer</p>
+                </div>
+            </div>
+        </section>
+
+        <main class="space-y-20">
+            <section id="section-1" class="p-8 bg-white rounded-2xl shadow-sm border border-stone-200">
+                <h3 class="text-2xl font-bold mb-4">1. Input & UI: The Starting Point</h3>
+                <p class="text-stone-600 mb-6">The application starts with a user interface built using Streamlit. This interface serves as the entry point, allowing a user to upload their documents (PDFs or text files) and provide their OpenAI API key. The key is necessary to access the AI models that power the embedding and generation stages. The user then asks a question in a simple text box. This combination of documents and a query kicks off the entire RAG process.</p>
+                <div class="bg-stone-100 p-4 rounded-lg text-sm text-stone-700">
+                    <h4 class="font-semibold mb-2">Key Components:</h4>
+                    <ul class="list-disc list-inside space-y-1">
+                        <li><strong class="text-stone-800">File Uploader:</strong> Accepts multiple `.pdf` and `.txt` files.</li>
+                        <li><strong class="text-stone-800">API Key Input:</strong> Securely takes the user's OpenAI key.</li>
+                        <li><strong class="text-stone-800">Query Input:</strong> A text box for the user's question.</li>
+                    </ul>
+                </div>
+            </section>
+
+            <section id="section-2" class="p-8 bg-white rounded-2xl shadow-sm border border-stone-200">
+                <h3 class="text-2xl font-bold mb-4">2. Processing: Parsing and Chunking</h3>
+                <p class="text-stone-600 mb-6">Once files are uploaded, their content must be extracted and prepared. The script uses the `PyMuPDF` (fitz) library to read text from PDFs. For any file type, the raw text is then passed to LangChain's `CharacterTextSplitter`. This is a crucial step: LLMs have a limited context window (they can't read a whole book at once). The splitter breaks the long text into smaller, overlapping "chunks." Overlap ensures that semantic context isn't lost at the boundaries of each chunk.</p>
+                <div class="bg-stone-100 p-6 rounded-lg mt-6">
+                    <h4 class="font-semibold mb-4 text-lg text-center">Interactive Text Chunker</h4>
+                    <textarea id="chunker-input" class="w-full p-2 border border-stone-300 rounded-md h-32">Retrieval-Augmented Generation (RAG) is a powerful technique that combines the strengths of pre-trained language models with external knowledge retrieval. Instead of relying solely on the information it was trained on, a RAG model first fetches relevant documents or passages from a knowledge base, like a set of user-provided PDFs. It then uses this retrieved context to inform its generation process, leading to more accurate, detailed, and context-aware answers. This approach effectively grounds the model's responses in factual data, reducing the likelihood of hallucinations and allowing it to answer questions about specific, private, or recent information. The core workflow involves indexing documents into a searchable format, retrieving relevant sections based on a user's query, and then feeding those sections, along with the query, to the language model to synthesize a final answer.</textarea>
+                    <div class="text-center mt-4">
+                        <button id="chunk-button" class="bg-orange-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-orange-600 transition-colors">Chunk this Text</button>
+                    </div>
+                    <div id="chunk-output" class="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+                </div>
+            </section>
+
+            <section id="section-3" class="p-8 bg-white rounded-2xl shadow-sm border border-stone-200">
+                <h3 class="text-2xl font-bold mb-4">3. Embedding: Turning Text into Numbers</h3>
+                <p class="text-stone-600 mb-6">After chunking, we need a way to find relevant chunks for a given question. This is where embeddings come in. An embedding model (here, OpenAI's `text-embedding-3-small`) converts each text chunk into a list of numbers called a vector. This vector represents the chunk's semantic meaning. Chunks with similar meanings will have similar vectors. All these vectors are then stored in a specialized database, a `Chroma` vector store. This store is highly optimized for finding the most similar vectors very quickly.</p>
+                 <div class="bg-stone-100 p-6 rounded-lg mt-6">
+                    <h4 class="font-semibold mb-2 text-lg">Core Logic:</h4>
+                    <p class="text-stone-600">The `@st.cache_resource` decorator in the code is very important. It tells Streamlit to create the vector store once and then reuse it for subsequent queries. This avoids the costly process of re-embedding all the documents every time a user asks a new question.</p>
+                </div>
+            </section>
+
+            <section id="section-4" class="p-8 bg-white rounded-2xl shadow-sm border border-stone-200">
+                <h3 class="text-2xl font-bold mb-4">4. Retrieval: Finding the Right Context</h3>
+                <p class="text-stone-600 mb-6">This is the "Retrieval" in RAG. When a user asks a question, that question is also converted into a vector using the same embedding model. The system then uses this query vector to search the `Chroma` vector store. It performs a "similarity search" to find the text chunks whose vectors are closest to the query's vector. In the code, `k=15` means it retrieves the top 15 most relevant chunks. These chunks form the "context" that the LLM will use to answer the question.</p>
+                <div class="bg-stone-100 p-6 rounded-lg mt-6">
+                    <h4 class="font-semibold mb-4 text-lg text-center">Vector Similarity Search Visualization</h4>
+                    <p class="text-stone-600 text-center mb-4">This chart simulates the vector space. Grey dots are document chunks. Click the button to introduce a query (orange dot) and find the 5 most similar chunks (blue dots).</p>
+                    <div class="chart-container">
+                        <canvas id="retrieval-chart"></canvas>
+                    </div>
+                    <div class="text-center mt-4">
+                        <button id="query-button" class="bg-orange-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-orange-600 transition-colors">Simulate Query</button>
+                    </div>
+                </div>
+            </section>
+
+            <section id="section-5" class="p-8 bg-white rounded-2xl shadow-sm border border-stone-200">
+                <h3 class="text-2xl font-bold mb-4">5. Generation: Answering the Question</h3>
+                <p class="text-stone-600 mb-6">This is the final "Augmented Generation" step. The retrieved text chunks (the context) are combined with the original user question into a single, large piece of text. This is done using a `PromptTemplate`, which gives instructions to the AI. The template essentially says: "You are an expert. Answer the following question using *only* the context provided below." This combined prompt is then sent to a powerful Large Language Model (LLM), `gpt-4o`. The LLM reads the context and the question, and generates a comprehensive answer that is grounded in the information from the user's documents.</p>
+                <div class="bg-stone-100 p-6 rounded-lg mt-6">
+                    <h4 class="font-semibold mb-4 text-lg text-center">Interactive Prompt Builder</h4>
+                    <p class="text-stone-600 text-center mb-4">See how the retrieved context and user query are "stuffed" into the final prompt for the LLM.</p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="prompt-context" class="font-semibold block mb-1">Retrieved Context (from Step 4)</label>
+                            <textarea id="prompt-context" class="w-full p-2 border border-stone-300 rounded-md h-40" readonly>...RAG model first fetches relevant documents or passages from a knowledge base... It then uses this retrieved context to inform its generation process, leading to more accurate answers...</textarea>
+                        </div>
+                        <div>
+                            <label for="prompt-question" class="font-semibold block mb-1">User's Question</label>
+                            <textarea id="prompt-question" class="w-full p-2 border border-stone-300 rounded-md h-40" readonly>How does RAG work?</textarea>
+                        </div>
+                    </div>
+                     <div class="text-center mt-4">
+                        <button id="build-prompt-button" class="bg-orange-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-orange-600 transition-colors">Build Final Prompt</button>
+                    </div>
+                    <div class="mt-4">
+                         <h5 class="font-semibold mb-2">Final Prompt Sent to LLM:</h5>
+                         <div id="final-prompt" class="w-full p-3 bg-white border border-stone-300 rounded-md h-56 overflow-y-auto text-sm">Click the button to see the result.</div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="code-explorer" class="p-8 bg-white rounded-2xl shadow-sm border border-stone-200">
+                <h3 class="text-2xl font-bold mb-4">Code & Library Explorer</h3>
+                <p class="text-stone-600 mb-6">Explore the key libraries and Python code snippets that make this application work. Each library plays a specific, vital role in the RAG pipeline.</p>
+                <div class="border-b border-gray-200">
+                    <nav class="-mb-px flex space-x-6" aria-label="Tabs">
+                        <button class="tab-btn active-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm" data-target="tab-libraries">Key Libraries</button>
+                        <button class="tab-btn whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300" data-target="tab-helpers">Helper Functions</button>
+                        <button class="tab-btn whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300" data-target="tab-generate">Generate Response</button>
+                        <button class="tab-btn whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300" data-target="tab-ui">Streamlit UI</button>
+                    </nav>
+                </div>
+                <div class="py-6">
+                    <div id="tab-libraries" class="tab-content">
+                        <dl class="space-y-4">
+                            <div class="bg-stone-50 p-3 rounded-lg">
+                                <dt class="font-semibold text-stone-800">Streamlit</dt>
+                                <dd class="text-stone-600">A Python framework for creating and sharing web apps for data science and machine learning projects with simple Python scripts.</dd>
+                            </div>
+                            <div class="bg-stone-50 p-3 rounded-lg">
+                                <dt class="font-semibold text-stone-800">LangChain</dt>
+                                <dd class="text-stone-600">The core framework for building applications with LLMs. It provides modular components (like text splitters, embedding wrappers, and chains) to streamline the development process.</dd>
+                            </div>
+                            <div class="bg-stone-50 p-3 rounded-lg">
+                                <dt class="font-semibold text-stone-800">PyMuPDF (fitz)</dt>
+                                <dd class="text-stone-600">A high-performance Python library for data extraction, analysis, conversion, and manipulation of PDF documents.</dd>
+                            </div>
+                            <div class="bg-stone-50 p-3 rounded-lg">
+                                <dt class="font-semibold text-stone-800">ChromaDB</dt>
+                                <dd class="text-stone-600">An open-source vector database designed to store and retrieve vector embeddings efficiently, forming the backbone of the retrieval system.</dd>
+                            </div>
+                        </dl>
+                    </div>
+                    <div id="tab-helpers" class="tab-content hidden">
+                        <pre class="bg-stone-900 text-white p-4 rounded-lg overflow-x-auto text-sm"><code class="language-python">import fitz  # PyMuPDF
+
+# --- Helpers ---
+def read_pdf_bytes(pdf_bytes: bytes) -> str:
+    """Extract full text from PDF bytes."""
+    pdf = fitz.open(stream=pdf_bytes, filetype="pdf")
+    return "\n".join(page.get_text() for page in pdf)
+
+# Create or retrieve a cached vector store (ignore unhashable docs arg)
+@st.cache_resource(show_spinner=False)
+def get_vector_store(_documents, api_key: str) -> Chroma:
+    """Builds a Chroma vector store from document chunks."""
+    embeddings = OpenAIEmbeddings(model="text-embedding-3-small", openai_api_key=api_key)
+    return Chroma.from_documents(_documents, embeddings)
+
+# Prompt template
+PROMPT = PromptTemplate(
+    input_variables=["context", "question"],
+    template=(
+        "You are an expert assistant. "
+        "Use the following context to answer comprehensively (>=1000 words). "
+        "Only use provided context.\n\n"
+        "Context:\n{context}\n\n"
+        "Question: {question}\n\n"
+        "Answer:"
+    )
+)</code></pre>
+                    </div>
+                    <div id="tab-generate" class="tab-content hidden">
+                         <pre class="bg-stone-900 text-white p-4 rounded-lg overflow-x-auto text-sm"><code class="language-python">def generate_response(uploaded_files, api_key, query_text):
+    # 1. Read & chunk documents
+    docs = []
+    splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
+    for uploaded_file in uploaded_files:
+        data = uploaded_file.read()
+        uploaded_file.seek(0)
+        if uploaded_file.type == "application/pdf":
+            text = read_pdf_bytes(data)
+        else:
+            text = data.decode("utf-8")
+        docs.extend(
+            splitter.create_documents([text], metadatas=[{"source": uploaded_file.name}])
+        )
+
+    # 2. Build or retrieve vector store
+    vectorstore = get_vector_store(docs, api_key)
+
+    # 3. Dense retrieval via similarity search
+    retriever = vectorstore.as_retriever(
+        search_type="similarity",
+        search_kwargs={"k": 15}
+    )
+
+    # 4. Set up QA chain
+    llm = ChatOpenAI(model_name="gpt-4o", openai_api_key=api_key, temperature=0.0)
+    chain = RetrievalQA.from_chain_type(
+        llm=llm,
+        chain_type="stuff",
+        retriever=retriever,
+        chain_type_kwargs={"prompt": PROMPT},
+        return_source_documents=False
+    )
+
+    # 5. Invoke chain
+    result = chain({"query": query_text})
+    return result.get("result", "")</code></pre>
+                    </div>
+                    <div id="tab-ui" class="tab-content hidden">
+                         <pre class="bg-stone-900 text-white p-4 rounded-lg overflow-x-auto text-sm"><code class="language-python"># --- Streamlit UI ---
+st.set_page_config(page_title="📖 Interactive PDF RAG Reader", layout="wide")
+
+# Sidebar: uploads & API key
+with st.sidebar:
+    st.title("📚 Your Documents")
+    uploaded_files = st.file_uploader(
+        label="Upload PDFs or Text",
+        type=["pdf", "txt"],
+        accept_multiple_files=True
+    )
+    st.markdown("---")
+    st.text_input("OpenAI API Key", key="api_key", type="password")
+
+# Main interface
+st.markdown("# Interactive Reader 🚀")
+query_text = st.text_input(
+    "Ask a question from the uploaded docs:",
+    disabled=not uploaded_files
+)
+
+# Chat interface
+if query_text and st.session_state.get("api_key", "").startswith("sk-"):
+    if st.button("Send"):
+        with st.spinner("Processing... 📡"):
+            answer = generate_response(
+                uploaded_files,
+                st.session_state.api_key,
+                query_text
+            )
+        st.markdown(f"**You:** {query_text}")
+        st.markdown(f"**Assistant:** {answer}")
+elif uploaded_files:
+    st.warning("Enter your OpenAI API key in the sidebar to enable chat.")</code></pre>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+
+    // --- Flowchart Scrolling ---
+    const flowBoxes = document.querySelectorAll('.flow-box');
+    flowBoxes.forEach(box => {
+        box.addEventListener('click', () => {
+            const targetId = box.getAttribute('data-target');
+            const targetElement = document.getElementById(targetId);
+            if (targetElement) {
+                targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        });
+    });
+
+    // --- Interactive Text Chunker ---
+    const chunkButton = document.getElementById('chunk-button');
+    chunkButton.addEventListener('click', () => {
+        const inputText = document.getElementById('chunker-input').value;
+        const outputDiv = document.getElementById('chunk-output');
+        outputDiv.innerHTML = '';
+        const chunkSize = 150;
+        const chunkOverlap = 30;
+
+        if (!inputText) return;
+
+        let chunks = [];
+        let i = 0;
+        while(i < inputText.length) {
+            let end = i + chunkSize;
+            chunks.push(inputText.slice(i, end));
+            i += chunkSize - chunkOverlap;
+        }
+
+        chunks.forEach((chunk, index) => {
+            const chunkDiv = document.createElement('div');
+            chunkDiv.className = 'p-3 bg-white border border-stone-300 rounded-md text-sm';
+            chunkDiv.innerHTML = `<span class="font-bold text-orange-600">Chunk ${index + 1}:</span> ${chunk.replace(/\n/g, ' ')}...`;
+            outputDiv.appendChild(chunkDiv);
+        });
+    });
+
+    // --- Retrieval Chart ---
+    const ctx = document.getElementById('retrieval-chart').getContext('2d');
+    let retrievalChart;
+    const K_NEAREST = 5;
+
+    function generateInitialData() {
+        const data = [];
+        for (let i = 0; i < 50; i++) {
+            data.push({
+                x: Math.random() * 100,
+                y: Math.random() * 100,
+            });
+        }
+        return data;
+    }
+
+    let chartDataPoints = generateInitialData();
+
+    function createChart() {
+         if (retrievalChart) {
+            retrievalChart.destroy();
+        }
+        const datasets = [{
+            label: 'Document Chunks',
+            data: chartDataPoints,
+            backgroundColor: 'rgba(120, 113, 108, 0.5)', // stone-500
+            borderColor: 'rgba(120, 113, 108, 1)',
+            pointRadius: 5,
+            pointHoverRadius: 7
+        }];
+
+        retrievalChart = new Chart(ctx, {
+            type: 'scatter',
+            data: { datasets: datasets },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: { display: false },
+                    y: { display: false }
+                },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { enabled: false }
+                }
+            }
+        });
+    }
+
+    createChart();
+
+    document.getElementById('query-button').addEventListener('click', () => {
+        // Reset colors if we are running it again
+        createChart();
+
+        const queryPoint = {
+            x: Math.random() * 100,
+            y: Math.random() * 100
+        };
+
+        const distances = chartDataPoints.map((point, index) => {
+            const dist = Math.sqrt(Math.pow(point.x - queryPoint.x, 2) + Math.pow(point.y - queryPoint.y, 2));
+            return { index, dist };
+        });
+
+        distances.sort((a, b) => a.dist - b.dist);
+
+        const nearestIndices = distances.slice(0, K_NEAREST).map(d => d.index);
+
+        const backgroundColors = chartDataPoints.map((_, index) => {
+            if (nearestIndices.includes(index)) {
+                return 'rgba(59, 130, 246, 0.8)'; // blue-500
+            }
+            return 'rgba(120, 113, 108, 0.5)'; // stone-500
+        });
+
+        // Add query point
+        retrievalChart.data.datasets.push({
+            label: 'Query',
+            data: [queryPoint],
+            backgroundColor: 'rgba(249, 115, 22, 1)', // orange-500
+            borderColor: 'rgba(251, 146, 60, 1)',
+            pointRadius: 8,
+            pointHoverRadius: 10
+        });
+
+        retrievalChart.data.datasets[0].backgroundColor = backgroundColors;
+        retrievalChart.update();
+    });
+
+    // --- Prompt Builder ---
+    document.getElementById('build-prompt-button').addEventListener('click', () => {
+        const context = document.getElementById('prompt-context').value;
+        const question = document.getElementById('prompt-question').value;
+        const template = `You are an expert assistant. Use the following context to answer comprehensively (>=1000 words). Only use provided context.\n\nContext:\n${context}\n\nQuestion: ${question}\n\nAnswer:`;
+        document.getElementById('final-prompt').textContent = template;
+    });
+
+    // --- Tabbed Code Viewer ---
+    const tabButtons = document.querySelectorAll('.tab-btn');
+    const tabContents = document.querySelectorAll('.tab-content');
+
+    tabButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            const targetId = button.dataset.target;
+
+            tabButtons.forEach(btn => {
+                btn.classList.remove('active-tab');
+                btn.classList.add('border-transparent', 'text-gray-500', 'hover:text-gray-700', 'hover:border-gray-300');
+            });
+
+            button.classList.add('active-tab');
+            button.classList.remove('border-transparent', 'text-gray-500', 'hover:text-gray-700', 'hover:border-gray-300');
+
+            tabContents.forEach(content => {
+                if (content.id === targetId) {
+                    content.classList.remove('hidden');
+                } else {
+                    content.classList.add('hidden');
+                }
+            });
+        });
+    });
+
+});
+</script>
+
+</body>
+</html>
